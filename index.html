@@ -981,6 +981,7 @@
             skipBtn.remove();
             const box = document.getElementById('msg-box');
             box.style.opacity = 0;
+            isSkipping = false; // Reset skip flag
             setchar("left", null);
             setchar("right", null);
             await sleep(1000);
