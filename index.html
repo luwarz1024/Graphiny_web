@@ -101,11 +101,17 @@
         }
 
         #game-container {
-            width: 100%;
+            width: 100vw;
+            height: 100vh;
             max-width: 1200px;
-            height: auto;
+            max-height: 700px;
             aspect-ratio: 1200 / 700;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
             background: #111;
             box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
             overflow: hidden;
@@ -286,6 +292,101 @@
             z-index: 999;
         }
 
+        #rotate-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: black;
+            color: white;
+            z-index: 20000;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            flex-direction: column;
+            font-size: 24px;
+        }
+
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10000;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+
+        .dpad-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: white;
+            user-select: none;
+            touch-action: none;
+            -webkit-user-select: none;
+        }
+
+        .dpad-btn:active,
+        .dpad-btn.active {
+            background: rgba(0, 255, 255, 0.4);
+            transform: scale(0.95);
+        }
+
+        #dpad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dpad-row {
+            display: flex;
+            gap: 65px;
+        }
+
+        #action-btn {
+            width: 80px;
+            height: 80px;
+            align-self: flex-end;
+            margin-bottom: 20px;
+            border-color: #ff0055;
+            background: rgba(255, 0, 85, 0.1);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+        }
+
+        #action-btn:active,
+        #action-btn.active {
+            background: rgba(255, 0, 85, 0.4);
+        }
+
+        @media screen and (orientation: portrait) {
+            #rotate-warning {
+                display: flex;
+            }
+
+            #game-container {
+                display: none;
+            }
+        }
+
+        @media (hover: none) and (orientation: landscape) {
+            #mobile-controls {
+                display: flex;
+            }
+        }
+
         @media screen and (max-width: 768px) {
             body {
                 padding: 0;
@@ -369,8 +470,23 @@
 </head>
 
 <body>
+    <div id="rotate-warning">
+        <div style="font-size: 50px; margin-bottom: 20px;">↻</div>
+        <div>Please Rotate Your Device</div>
+    </div>
     <div id="cursor-custom"></div>
     <div id="game-container">
+        <div id="mobile-controls">
+            <div id="dpad">
+                <div class="dpad-btn" data-key="ArrowUp" id="btn-up">▲</div>
+                <div class="dpad-row">
+                    <div class="dpad-btn" data-key="ArrowLeft" id="btn-left">◀</div>
+                    <div class="dpad-btn" data-key="ArrowRight" id="btn-right">▶</div>
+                </div>
+                <div class="dpad-btn" data-key="ArrowDown" id="btn-down">▼</div>
+            </div>
+            <div id="action-btn" class="dpad-btn" data-key=" ">●</div>
+        </div>
         <div id="crt-overlay" class="layer"></div>
         <div id="bg-layer" class="layer"></div>
 
@@ -400,6 +516,49 @@
 
     <script type="module">
         import { context, beam, savedata, battle, startDanmakuMaker } from './ansc/ansc.js';
+
+        // Touch Control Logic
+        const touchBtns = document.querySelectorAll('.dpad-btn');
+        touchBtns.forEach(btn => {
+            const key = btn.getAttribute('data-key');
+
+            const dispatchKey = (type) => {
+                const event = new KeyboardEvent(type, {
+                    key: key,
+                    code: key === ' ' ? 'Space' : key,
+                    bubbles: true,
+                    cancelable: true
+                });
+                document.dispatchEvent(event);
+            };
+
+            const startHandler = (e) => {
+                e.preventDefault();
+                if (!btn.classList.contains('active')) {
+                    dispatchKey('keydown');
+                    btn.classList.add('active');
+                    // Haptic feedback if available
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(5);
+                    }
+                }
+            };
+
+            const endHandler = (e) => {
+                e.preventDefault();
+                if (btn.classList.contains('active')) {
+                    dispatchKey('keyup');
+                    btn.classList.remove('active');
+                }
+            };
+
+            btn.addEventListener('touchstart', startHandler, { passive: false });
+            btn.addEventListener('touchend', endHandler, { passive: false });
+            btn.addEventListener('mousedown', startHandler);
+            btn.addEventListener('mouseup', endHandler);
+            btn.addEventListener('mouseleave', endHandler);
+        });
+
 
         const ASSETS = {
             bg: 'ansc/home.png',
@@ -526,8 +685,14 @@
             }
         }
 
+        let isSkipping = false;
+
         async function showvn(text, name = "", side = "left") {
             const box = document.getElementById('msg-box');
+            if (isSkipping) {
+                box.style.opacity = 0;
+                return;
+            }
             if (!text) {
                 box.style.opacity = 0;
                 await sleep(500);
@@ -574,6 +739,9 @@
             let charCount = 0;
 
             for (let char of text) {
+                if (isSkipping) {
+                    break;
+                }
                 if (skipTyping) {
                     textEl.innerHTML = text;
                     audioCtx.playSe('type');
@@ -592,7 +760,7 @@
 
             await new Promise(resolve => {
                 const checkAdvance = () => {
-                    if (advanceToNext) {
+                    if (advanceToNext || isSkipping) {
                         resolve();
                     } else {
                         setTimeout(checkAdvance, 50);
@@ -600,6 +768,14 @@
                 };
                 checkAdvance();
             });
+
+            if (isSkipping) {
+                box.style.opacity = 0;
+                document.removeEventListener('keydown', keyHandler);
+                box.removeEventListener('touchstart', touchHandler);
+                box.removeEventListener('click', clickHandler);
+                return;
+            }
 
             audioCtx.playSe('enter');
             nextInd.style.display = 'none';
@@ -723,10 +899,10 @@
         async function showPrologueSummary() {
             Bg("#000");
             const scenes = [
-                { img: "./ansc/movie/prologuemovie-1.png", chara: false, text: "西暦40xx年、地球は途轍もなく発達した。" },
+                { img: "./ansc/movie/prologuemovie-1.png", chara: false, text: "西暦40xx年、地球はとてつもなく発達した。" },
                 { img: "./ansc/movie/prologuemovie-1.png", chara: false, text: "戦争は終結し、人類は平和を築いていた。誰もが幸せな、理想郷だった。" },
                 { img: "./ansc/movie/prologuemovie-9.png", chara: false, text: "だが…平和ボケしていたのか、政府は生命維持システムへのアクセスを緩めた。その結果、企業などはそのシステムにCMなどを組み込み、商業はより盛んになった。" },
-                { img: "./ansc/movie/prologuemovie-9.png", chara: false, text: "規制緩和は大正解の…筈だった。" },
+                { img: "./ansc/movie/prologuemovie-9.png", chara: false, text: "規制緩和は大正解の…はずだった。" },
                 { img: "./ansc/movie/prologuemovie-2.png", chara: false, text: "とある若者が事故で大罪を起こす。" },
                 { img: "./ansc/movie/prologuemovie-2.png", chara: false, text: "世界の1/4が…人が住める状況ではなくなった。" },
                 { img: "./ansc/movie/prologuemovie-3.png", chara: false, text: "その若者には、司法機関から\"死ぬまで孤独に宇宙を彷徨う\"という、前代未聞の罰が与えられた。" },
@@ -763,9 +939,10 @@
             skipBtn.onmouseenter = () => skipBtn.style.background = "rgba(255, 255, 255, 0.3)";
             skipBtn.onmouseleave = () => skipBtn.style.background = "rgba(0,0,0,0.5)";
 
+            isSkipping = false;
             let skipped = false;
-            skipBtn.onclick = () => { skipped = true; };
-            skipBtn.ontouchstart = () => { skipped = true; };
+            skipBtn.onclick = () => { skipped = true; isSkipping = true; document.getElementById('msg-box').style.opacity = 0; };
+            skipBtn.ontouchstart = () => { skipped = true; isSkipping = true; document.getElementById('msg-box').style.opacity = 0; };
             document.getElementById('game-container').appendChild(skipBtn);
 
             for (const scene of scenes) {
@@ -1217,7 +1394,12 @@
             await realStageSelect();
             await showvn("「今見たのは…ステージセレクト画面だ。」", "神", "right");
             await showvn("「そうだな…ここで一つ、テストとしてバトルでもしてみるか。」", "神", "right");
-
+            const isMobile = window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(hover: none)').matches;
+            if (isMobile) {
+                await showvn("「あまり身構えなくていい。操作は画面のボタンを使ってくれ。」", "神", "right");
+            } else {
+                await showvn("「あまり身構えなくていい。操作は矢印キーだけだ。」", "神", "right");
+            }
             setchar('right', ASSETS.god);
             await showvn("「例えば…『Red隊のディアー』。囲うようにじわじわと攻撃をしてくる。」", "神", "right");
             showvn(null); setchar('right', null);
