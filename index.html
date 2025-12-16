@@ -101,17 +101,12 @@
         }
 
         #game-container {
-            width: 100vw;
-            height: 100vh;
-            max-width: 1200px;
-            max-height: 700px;
-            aspect-ratio: 1200 / 700;
+            width: 1200px;
+            height: 700px;
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            margin: auto;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
             background: #111;
             box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
             overflow: hidden;
@@ -558,6 +553,26 @@
             btn.addEventListener('mouseup', endHandler);
             btn.addEventListener('mouseleave', endHandler);
         });
+
+        // Resolution Scaling Logic
+        function resizeGame() {
+            const container = document.getElementById('game-container');
+            const targetWidth = 1200;
+            const targetHeight = 700;
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+
+            const scaleX = winWidth / targetWidth;
+            const scaleY = winHeight / targetHeight;
+            const scale = Math.min(scaleX, scaleY); // Fit to screen
+
+            container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+
+        window.addEventListener('resize', resizeGame);
+        window.addEventListener('load', resizeGame);
+        // Initial call
+        resizeGame();
 
 
         const ASSETS = {
