@@ -388,12 +388,7 @@
                 margin: 0;
             }
 
-            #game-container {
-                width: 100vw;
-                height: calc(100vw * 700 / 1200);
-                max-height: 100vh;
-                box-shadow: none;
-            }
+
 
             .vn-box {
                 padding: 10px 15px;
@@ -462,6 +457,28 @@
             }
         }
     </style>
+    <script>
+        // Synchronous Resize Logic for Immediate Execution
+        function resizeGame() {
+            const container = document.getElementById('game-container');
+            if (!container) return;
+
+            const targetWidth = 1200;
+            const targetHeight = 700;
+            const winWidth = window.innerWidth;
+            const winHeight = window.innerHeight;
+
+            const scaleX = winWidth / targetWidth;
+            const scaleY = winHeight / targetHeight;
+            const scale = Math.min(scaleX, scaleY);
+
+            container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        }
+
+        window.addEventListener('resize', resizeGame);
+        window.addEventListener('DOMContentLoaded', resizeGame);
+        window.addEventListener('load', resizeGame);
+    </script>
 </head>
 
 <body>
@@ -554,25 +571,8 @@
             btn.addEventListener('mouseleave', endHandler);
         });
 
-        // Resolution Scaling Logic
-        function resizeGame() {
-            const container = document.getElementById('game-container');
-            const targetWidth = 1200;
-            const targetHeight = 700;
-            const winWidth = window.innerWidth;
-            const winHeight = window.innerHeight;
-
-            const scaleX = winWidth / targetWidth;
-            const scaleY = winHeight / targetHeight;
-            const scale = Math.min(scaleX, scaleY); // Fit to screen
-
-            container.style.transform = `translate(-50%, -50%) scale(${scale})`;
-        }
-
-        window.addEventListener('resize', resizeGame);
-        window.addEventListener('load', resizeGame);
-        // Initial call
-        resizeGame();
+        // Ensure resize runs after module load too
+        if (typeof resizeGame === 'function') resizeGame();
 
 
         const ASSETS = {

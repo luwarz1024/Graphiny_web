@@ -40,7 +40,7 @@ export class Creation {
                             ["rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)", "rgba(0,0,0,1)"],]
                     },
                     zIndex: 1,
-                    maxWidth: 1250,
+                    maxWidth: 1200,
                     maxHeight: 700,
                     x: 0,
                     y: 0,
@@ -62,7 +62,7 @@ export class Creation {
                     type: 'colorfill',
                     typeValue: '#000000',
                     zIndex: 1,
-                    maxWidth: 1250,
+                    maxWidth: 1200,
                     maxHeight: 700,
                     x: 0,
                     y: 0,
@@ -83,7 +83,7 @@ export class Creation {
                 this.gui = {
                     type: 'image',
                     zIndex: 1,
-                    maxWidth: 1250,
+                    maxWidth: 1200,
                     maxHeight: 700,
                     x: 0,
                     y: 0,
@@ -105,7 +105,7 @@ export class Creation {
                     type: 'text',
                     typeValue: [20, 'hello world!'],
                     zIndex: 1,
-                    maxWidth: 1250,
+                    maxWidth: 1200,
                     maxHeight: 700,
                     x: 0,
                     y: 0,
@@ -237,10 +237,10 @@ export class Creation {
             });
         }
 
-ctx.restore();
+        ctx.restore();
     }
 
-delete() {
+    delete() {
         const cre = document.getElementById(this.name);
         const ctx = cre.getContext('2d');
         ctx.clearRect(0, 0, this.gui.maxWidth, this.gui.maxHeight);

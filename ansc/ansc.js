@@ -23,7 +23,7 @@ export const context = {
 
     playSynth: (type) => {
 
-if (window.playGameSe) window.playGameSe(type);
+        if (window.playGameSe) window.playGameSe(type);
     }
 };
 
@@ -203,7 +203,8 @@ async function visualnoveldialogue(lines, bgContext = null) {
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000;
         pointer-events: none;
     `;
-    document.body.appendChild(dialogueLayer);
+    const container = document.getElementById('game-container') || document.body;
+    container.appendChild(dialogueLayer);
 
     const bgLayer = document.createElement('div');
     bgLayer.style.cssText = `position: absolute; inset: 0; background-image: linear-gradient(to bottom right, #141e30, #243b55); background-color: #000; background-size: cover; background-position: center; z-index: 0; transition: background-image 0.5s;`;
@@ -211,14 +212,14 @@ async function visualnoveldialogue(lines, bgContext = null) {
 
     const style = document.createElement('style');
     style.innerHTML = `
-        .vn-char { position: absolute; bottom: 0; height: 80vh; transition: opacity 0.3s; image-rendering: pixelated; }
+        .vn-char { position: absolute; bottom: 0; height: 80%; transition: opacity 0.3s; image-rendering: pixelated; }
         .vn-char.left { left: 10%; z-index: 2; }
         .vn-char.right { right: 10%; z-index: 2; }
         .vn-box { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; height: 220px; background: rgba(0,0,0,0.8); border: 2px solid cyan; padding: 20px; font-size: 24px; color: white; display:flex; flex-direction:column; z-index:10; }
         .vn-name { font-size: 32px; color: cyan; margin-bottom: 10px; }
         .vn-text { flex:1; }
      `;
-    document.body.appendChild(style);
+    container.appendChild(style);
 
     const leftChar = document.createElement('img'); leftChar.className = "vn-char left"; dialogueLayer.appendChild(leftChar);
     const rightChar = document.createElement('img'); rightChar.className = "vn-char right"; dialogueLayer.appendChild(rightChar);
@@ -278,11 +279,11 @@ export async function battle(bullet_hell, Stagenumber, StageLevel = 1, lastboss 
     const bgContext = { isBoss, lastboss, Stagenumber, Stagelevel: StageLevel };
     danmakuEngine.init();
 
-return await new Promise(async (resolve) => {
+    return await new Promise(async (resolve) => {
         window.battleActive = true;
         window.windForce = 0;
 
-let musicPath = isBoss ? './ansc/music/BossBattle.wav' : './ansc/music/EnemyBattle.mp3';
+        let musicPath = isBoss ? './ansc/music/BossBattle.wav' : './ansc/music/EnemyBattle.mp3';
         if (lastboss && !scriptedLoss) musicPath = './ansc/music/The-UnknownContinue.mp3';
         const battleAudio = new Audio(musicPath);
         battleAudio.volume = (savedata.config.bgm || 100) / 100;
@@ -315,10 +316,10 @@ let musicPath = isBoss ? './ansc/music/BossBattle.wav' : './ansc/music/EnemyBatt
         let Player_ishit = [false, 0];
         let finishcharge = 0;
 
-let score = 0;
+        let score = 0;
         let survivalFrame = 0;
 
-const challenge = window.challengeFlags || {};
+        const challenge = window.challengeFlags || {};
         if (challenge.owata) PlayerHP = 1;
 
         const radi = Creation.create("radi", "gui", { typeValue: { dot: "10px", data: [], zIndex: 2, } }, "newcreate");
@@ -440,7 +441,7 @@ const challenge = window.challengeFlags || {};
             particles.push({ x: x + 16, y: y + 16, life: 20, type: 'square', color: color, size: 10 });
         }
 
-function createAfterimage(obj) {
+        function createAfterimage(obj) {
             particles.push({
                 x: obj.gui.x, y: obj.gui.y, width: obj.gui.width, height: obj.gui.height,
                 life: 10, maxLife: 10, type: 'afterimage', color: savedata.maincolor,
@@ -448,9 +449,9 @@ function createAfterimage(obj) {
             });
         }
 
-document.addEventListener("keyup", e => { if (e.key === " " && isshoot) { isshoot = false; }; });
+        document.addEventListener("keyup", e => { if (e.key === " " && isshoot) { isshoot = false; }; });
 
-function getCorners(obj) {
+        function getCorners(obj) {
             const angle = (obj.angle || 0) * Math.PI / 180;
             const cx = obj.gui.x + obj.gui.width / 2;
             const cy = obj.gui.y + obj.gui.height / 2;
@@ -526,13 +527,13 @@ function getCorners(obj) {
                 score += 100;
             }
 
-if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
+            if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
                 if (survivalFrame % 5 === 0) createAfterimage(player);
             }
 
             danmakuEngine.update(player, onPlayerHit);
 
-if (PlayerHP <= 0) {
+            if (PlayerHP <= 0) {
                 stopBattleMusic();
                 beams.length = 0;
                 window.battleActive = false;
@@ -550,7 +551,7 @@ if (PlayerHP <= 0) {
                 resolve(true);
                 return;
 
-}
+            }
 
             PlayerHPBer.delete(); PlayerHPBerBack.delete();
             PlayerHPBer.gui.width = PlayerHP * 100; PlayerHPBerBack.gui.width = 300;
@@ -581,7 +582,7 @@ if (PlayerHP <= 0) {
             GraphinyGauge.canvas(); GraphinyGaugeBack.canvas(); PlayerHPBer.canvas(); PlayerHPBerBack.canvas();
             player.canvas();
 
-const pCtx = document.getElementById("particleLayer").getContext('2d');
+            const pCtx = document.getElementById("particleLayer").getContext('2d');
             pCtx.save();
             pCtx.font = "24px 'PixelMplus10'";
             pCtx.fillStyle = "#fff";
@@ -593,7 +594,7 @@ const pCtx = document.getElementById("particleLayer").getContext('2d');
 
             updateScreenAura(); moveWithGravity(player); enemy.canvas();
 
-if (window.battleActive) requestAnimationFrame(update);
+            if (window.battleActive) requestAnimationFrame(update);
         }
 
         if (typeof bullet_hell === 'function') bullet_hell();
