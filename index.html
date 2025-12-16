@@ -1466,13 +1466,17 @@
             await showLabel("12/17(水)");
             await sleep(2000);
             await showLabel("Web上で遊べる\n体験版配布…");
+            await sleep(2000);
             await showLabel(
                 "Scenario: me (12)\n" +
-                "Program: me (12)\n" +
-                "Music: me (12)\n" +
-                "Art: me (12)\n\n" +
-                "Background: ぱくたそ"
+                "Program: me (12)\n"
             );
+            await showLabel("Music: me (12)\n" +
+                "Art: me (12)\n\n" +
+                "Background: ぱくたそ")
+            await sleep(2000);
+
+
         };
 
         const cursor = document.getElementById('cursor-custom');
