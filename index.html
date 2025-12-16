@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Graphiny - Announcement Movie</title>
+    <style>
+        @font-face {
+            font-family: 'PixelMplus10';
+            src: url('./ansc/fonts/PixelMplus10-Regular.ttf') format('truetype');
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        body {
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            overflow: hidden;
+            font-family: 'PixelMplus10', 'Share Tech Mono', sans-serif;
+            cursor: none;
+
+        }
+
+        #cursor-custom {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #00ffcc;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10000;
+            transition: width 0.1s, height 0.1s, background-color 0.1s;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-custom.hover {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(0, 255, 204, 0.2);
+            border-color: #fff;
+        }
+
+        #cursor-custom::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #ff0055;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+
+        #crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: scanline 10s linear infinite;
+        }
+
+        #crt-overlay::before {
+
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: radial-gradient(circle, rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 0.6) 100%);
+            z-index: 2;
+        }
+
+        @keyframes scanline {
+            0% {
+                background-position: 0 0, 0 0;
+            }
+
+            100% {
+                background-position: 0 100%, 0 0;
+            }
+        }
+
+        canvas,
+        img {
+            image-rendering: pixelated;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 1200px;
+            height: auto;
+            aspect-ratio: 1200 / 700;
+            position: relative;
+            background: #111;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #bg-layer {
+            z-index: 0;
+        }
+
+        #movie-layer {
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #battle-layer {
+            z-index: 5;
+            opacity: 0;
+        }
+
+        #ui-layer {
+            z-index: 20;
+        }
+
+        #glitch-layer {
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+
+        .vn-box {
+            background: rgba(10, 16, 26, 0.95);
+            border: 2px solid #4deeea;
+            color: #e0f7fa;
+            font-family: 'PixelMplus10', sans-serif;
+            padding: 20px 40px;
+            min-height: 150px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            box-shadow: 0 0 20px rgba(77, 238, 234, 0.2), inset 0 0 60px rgba(0, 0, 0, 0.8);
+            clip-path: polygon(20px 0, 100% 0,
+                    100% calc(100% - 20px), calc(100% - 20px) 100%,
+                    0 100%, 0 20px);
+            opacity: 0;
+            transition: opacity 0.5s;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .vn-box.visible {
+            opacity: 1;
+        }
+
+        .vn-name {
+            font-size: 24px;
+            color: #4deeea;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(77, 238, 234, 0.3);
+            display: inline-block;
+        }
+
+        .vn-text {
+            font-size: 20px;
+            line-height: 1.5;
+        }
+
+        .char-img {
+            position: absolute;
+            bottom: 0;
+            height: 80%;
+            transition: transform 0.3s, filter 0.3s;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+
+        .char-left {
+            left: 10%;
+            filter: brightness(0.5);
+        }
+
+        .char-right {
+            right: 10%;
+            filter: brightness(0.5);
+        }
+
+        .char-img.active {
+            filter: brightness(1.2) drop-shadow(0 0 10px #4deeea);
+            transform: scale(1.05);
+        }
+
+        .next-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 18px;
+            color: #4deeea;
+            animation: blink 1s infinite;
+            display: none;
+            pointer-events: none;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        #start-screen h1 {
+            font-size: 48px;
+            color: #4deeea;
+            text-shadow: 0 0 20px #4deeea;
+            animation: pulse 2s infinite;
+        }
+
+        .glitch-overlay {
+            width: 100%;
+            height: 100%;
+            background: url('./ansc/god_error.png') no-repeat center center;
+            background-size: cover;
+            mix-blend-mode: color-dodge;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.8;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.8;
+            }
+        }
+
+        #crt-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+
+            #game-container {
+                width: 100vw;
+                height: calc(100vw * 700 / 1200);
+                max-height: 100vh;
+                box-shadow: none;
+            }
+
+            .vn-box {
+                padding: 10px 15px;
+                min-height: 100px;
+                bottom: 10px;
+                width: 90%;
+            }
+
+            .vn-name {
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+
+            .vn-text {
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .char-img {
+                height: 60%;
+            }
+
+            .char-left {
+                left: 2%;
+            }
+
+            .char-right {
+                right: 2%;
+            }
+
+            #start-screen h1 {
+                font-size: 24px;
+                padding: 0 20px;
+                text-align: center;
+            }
+
+            #start-screen p {
+                font-size: 12px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .vn-box {
+                padding: 8px 12px;
+                min-height: 80px;
+                bottom: 5px;
+                clip-path: polygon(10px 0, 100% 0,
+                        100% calc(100% - 10px), calc(100% - 10px) 100%,
+                        0 100%, 0 10px);
+            }
+
+            .vn-name {
+                font-size: 14px;
+            }
+
+            .vn-text {
+                font-size: 12px;
+            }
+
+            .char-img {
+                height: 50%;
+            }
+
+            #start-screen h1 {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cursor-custom"></div>
+    <div id="game-container">
+        <div id="crt-overlay" class="layer"></div>
+        <div id="bg-layer" class="layer"></div>
+
+        <div id="stage" class="layer"></div>
+
+        <div id="battle-layer" class="layer">
+            <canvas id="battle-canvas" width="1200" height="700"></canvas>
+        </div>
+
+        <div id="movie-layer" class="layer">
+            <img id="char-left" class="char-img char-left" src="" style="display:none;">
+            <img id="char-right" class="char-img char-right" src="" style="display:none;">
+            <div id="msg-box" class="vn-box">
+                <div id="msg-name" class="vn-name"></div>
+                <div id="msg-text" class="vn-text"></div>
+                <div id="next-ind" class="next-indicator">▼ Enter / Tap</div>
+            </div>
+        </div>
+
+        <div id="glitch-layer" class="layer"></div>
+
+        <div id="start-screen" onclick="startMovie()" ontouchstart="startMovie()">
+            <h1>TAP TO START</h1>
+            <p style="margin-top:20px; color:#aaa;">[ AUDIO ENABLED ]</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { context, beam, savedata, battle, startDanmakuMaker } from './ansc/ansc.js';
+
+        const ASSETS = {
+            bg: 'ansc/home.png',
+            god: 'ansc/god.png',
+            error: 'ansc/god_error.png',
+            logo: 'ansc/logo.png',
+            music_menu: 'ansc/music/menu.mp3',
+            music_battle: 'ansc/music/EnemyBattle.mp3',
+        };
+
+        const PATH_PREFIX = './';
+
+        const audioCtx = {
+            bgm: new Audio(),
+            ctx: new (window.AudioContext || window.webkitAudioContext)(),
+            play: (src) => {
+                audioCtx.bgm.src = PATH_PREFIX + src;
+                audioCtx.bgm.loop = true;
+
+                if (audioCtx.ctx.state === 'suspended') {
+                    audioCtx.ctx.resume();
+                }
+                audioCtx.bgm.play().catch(e => console.log("Audio play failed", e));
+            },
+            stop: () => {
+                audioCtx.bgm.pause();
+            },
+            playSe: (type) => {
+                if (audioCtx.ctx.state === 'suspended') {
+                    audioCtx.ctx.resume();
+                }
+                const osc = audioCtx.ctx.createOscillator();
+                const gain = audioCtx.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.ctx.destination);
+
+                const now = audioCtx.ctx.currentTime;
+
+                if (type === 'drone') {
+
+                    const oscLow = audioCtx.ctx.createOscillator();
+                    oscLow.type = 'sawtooth';
+                    oscLow.frequency.setValueAtTime(50, now);
+                    const lfo = audioCtx.ctx.createOscillator();
+                    lfo.type = 'sine';
+                    lfo.frequency.setValueAtTime(0.5, now);
+                    const lfoGain = audioCtx.ctx.createGain();
+                    lfoGain.gain.value = 100;
+                    lfo.connect(lfoGain);
+                    lfoGain.connect(oscLow.detune);
+
+                    oscLow.connect(gain);
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.05, now + 2);
+
+                    oscLow.start(now);
+                    lfo.start(now);
+
+                    audioCtx.droneOsc = oscLow;
+                    audioCtx.droneGain = gain;
+                }
+
+                if (type === 'type') {
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gain.gain.setValueAtTime(0.03, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                } else if (type === 'enter') {
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(1000, now);
+                    osc.frequency.exponentialRampToValueAtTime(1500, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'shoot') {
+
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'hit') {
+
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+            }
+        };
+
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        window.playGameSe = (type) => audioCtx.playSe(type);
+
+        function Bg(img) {
+            const el = document.getElementById('bg-layer');
+            if (img.startsWith("#")) {
+                el.style.background = img;
+            } else {
+                el.style.background = `url('${PATH_PREFIX}${img}') no-repeat center center`;
+                el.style.backgroundSize = "cover";
+            }
+        }
+
+        function setchar(side, src) {
+            const el = document.getElementById(`char-${side}`);
+            if (!src) {
+                el.style.display = 'none';
+            } else {
+                el.src = PATH_PREFIX + src;
+                el.style.display = 'block';
+            }
+        }
+
+        async function showvn(text, name = "", side = "left") {
+            const box = document.getElementById('msg-box');
+            if (!text) {
+                box.style.opacity = 0;
+                await sleep(500);
+                return;
+            }
+            box.style.opacity = 1;
+            document.getElementById('msg-name').innerText = name;
+
+            const textEl = document.getElementById('msg-text');
+            textEl.innerHTML = "";
+
+            let skipTyping = false;
+            let textComplete = false;
+            let advanceToNext = false;
+
+            const handleAdvance = () => {
+                if (!textComplete) {
+
+                    skipTyping = true;
+                } else {
+
+                    advanceToNext = true;
+                }
+            };
+
+            const keyHandler = (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleAdvance();
+                }
+            };
+            const touchHandler = (e) => {
+                handleAdvance();
+            };
+            const clickHandler = (e) => {
+                handleAdvance();
+            };
+
+            document.addEventListener('keydown', keyHandler);
+            box.addEventListener('touchstart', touchHandler);
+            box.addEventListener('click', clickHandler);
+
+            const nextInd = document.getElementById('next-ind');
+            let charCount = 0;
+
+            for (let char of text) {
+                if (skipTyping) {
+                    textEl.innerHTML = text;
+                    audioCtx.playSe('type');
+                    break;
+                }
+                textEl.innerHTML += char;
+                charCount++;
+                if (charCount % 2 === 0) {
+                    audioCtx.playSe('type');
+                }
+                await sleep(30);
+            }
+
+            textComplete = true;
+            nextInd.style.display = 'block';
+
+            await new Promise(resolve => {
+                const checkAdvance = () => {
+                    if (advanceToNext) {
+                        resolve();
+                    } else {
+                        setTimeout(checkAdvance, 50);
+                    }
+                };
+                checkAdvance();
+            });
+
+            audioCtx.playSe('enter');
+            nextInd.style.display = 'none';
+
+            document.removeEventListener('keydown', keyHandler);
+            box.removeEventListener('touchstart', touchHandler);
+            box.removeEventListener('click', clickHandler);
+        }
+
+        function showLabel(text) {
+            const title = document.createElement('div');
+            title.innerText = text;
+            const isMobile = window.innerWidth <= 768;
+            const fontSize = isMobile ? '24px' : '60px';
+            title.style.cssText = `position:absolute; top:30%; left:50%; transform:translate(-50%, -50%); font-size:${fontSize}; color:white; text-shadow:0 0 20px red; z-index:100; opacity:0; transition:opacity 0.5s; font-family: 'PixelMplus10', sans-serif; text-align:center; padding:0 20px; white-space:pre-wrap; max-width:90%;`;
+            document.body.appendChild(title);
+            requestAnimationFrame(() => title.style.opacity = 1);
+            setTimeout(() => { title.style.opacity = 0; setTimeout(() => title.remove(), 1000); }, 2000);
+        }
+
+        class backeffect {
+            constructor() {
+                this.canvas = document.createElement('canvas');
+                this.canvas.width = 1200;
+                this.canvas.height = 700;
+                this.ctx = this.canvas.getContext('2d');
+                this.canvas.style.cssText = "position:absolute; top:0; left:0; width:100%; height:100%; z-index:1; pointer-events:none; mix-blend-mode: screen;";
+
+                const bgLayer = document.getElementById('bg-layer');
+                const oldCanvas = bgLayer.querySelector('canvas');
+                if (oldCanvas) oldCanvas.remove();
+
+                bgLayer.appendChild(this.canvas);
+
+                this.particles = [];
+                const particleCount = 60;
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push(this.createParticle());
+                }
+
+                this.time = 0;
+                this.active = true;
+                this.animate();
+            }
+
+            createParticle() {
+                return {
+                    x: Math.random() * 1200,
+                    y: Math.random() * 700,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: Math.random() * 3 + 1,
+                    opacity: Math.random() * 0.5 + 0.3,
+                    pulse: Math.random() * Math.PI
+                };
+            }
+
+            animate() {
+                if (!this.active) return;
+                const ctx = this.ctx;
+
+                ctx.clearRect(0, 0, 1200, 700);
+
+                this.time += 0.01;
+
+                const grad = ctx.createLinearGradient(0, 0, 1200, 700);
+                grad.addColorStop(0, "rgba(10, 20, 40, 0.2)");
+                grad.addColorStop(1, "rgba(20, 10, 40, 0.2)");
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 1200, 700);
+
+                this.particles.forEach((p, i) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.pulse += 0.02;
+
+                    if (p.x < 0) p.x = 1200;
+                    if (p.x > 1200) p.x = 0;
+                    if (p.y < 0) p.y = 700;
+                    if (p.y > 700) p.y = 0;
+
+                    for (let j = i + 1; j < this.particles.length; j++) {
+                        const p2 = this.particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < 150) {
+                            const alpha = (1 - dist / 150) * 0.2;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(100, 200, 255, ${alpha})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+
+                    const currentOpacity = p.opacity + Math.sin(p.pulse) * 0.1;
+                    ctx.fillStyle = `hsla(${p.hue}, 80%, 70%, ${Math.max(0, currentOpacity)})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = `hsla(${p.hue}, 80%, 60%, 0.5)`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+
+                requestAnimationFrame(() => this.animate());
+            }
+
+            stop() {
+                this.active = false;
+                this.canvas.remove();
+            }
+        }
+
+        async function showPrologueSummary() {
+            Bg("#000");
+            const scenes = [
+                { img: "./ansc/movie/prologuemovie-1.png", chara: false, text: "西暦40xx年、地球は途轍もなく発達した。" },
+                { img: "./ansc/movie/prologuemovie-1.png", chara: false, text: "戦争は終結し、人類は平和を築いていた。誰もが幸せな、理想郷だった。" },
+                { img: "./ansc/movie/prologuemovie-9.png", chara: false, text: "だが…平和ボケしていたのか、政府は生命維持システムへのアクセスを緩めた。その結果、企業などはそのシステムにCMなどを組み込み、商業はより盛んになった。" },
+                { img: "./ansc/movie/prologuemovie-9.png", chara: false, text: "規制緩和は大正解の…筈だった。" },
+                { img: "./ansc/movie/prologuemovie-2.png", chara: false, text: "とある若者が事故で大罪を起こす。" },
+                { img: "./ansc/movie/prologuemovie-2.png", chara: false, text: "世界の1/4が…人が住める状況ではなくなった。" },
+                { img: "./ansc/movie/prologuemovie-3.png", chara: false, text: "その若者には、司法機関から\"死ぬまで孤独に宇宙を彷徨う\"という、前代未聞の罰が与えられた。" },
+                { img: "./ansc/movie/prologuemovie-4.png", chara: false, text: "一人で宇宙を彷徨っていたその若者は、ある日不思議な光を見つける。" },
+                { img: "./ansc/movie/prologuemovie-5.png", chara: false, text: "そして、その若者は光に吸い込まれた。" },
+                { img: "./ansc/movie/prologuemovie-6.png", chara: false, text: "光の中で意識が遠のく。" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "目を開けるとそこには、見知らぬ異世界があった。" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「ようやく来たか。" + savedata.name + "。」", name: "???", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「ここどこだ…?」", name: savedata.name, speaker: "left" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「私は神だ。ここはお前の住んでいた世界とは違う…\"異世界\"だ。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「もう何年経ったかも忘れた…あの時から…陸に…辿り着けた…!」", name: savedata.name, speaker: "left" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「そうだな…それは置いておいて…お前には、とある\"戦争\"を止めてほしい。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「それは…\"クリスタル族\"と\"サン族\"の戦争だ。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「この世界はお前が元居た世界と違い、宇宙でも生物が生息できる。それ故、クリスタル族とサン族という生物が覇権を握った。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-8.png", text: "「だが、クリスタル族は、完全にクリスタル族が支配する世界にするために、サン族に対して戦争を仕掛けたのだ…」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-8.png", text: "「お前には、クリスタル族の王にしてこの戦争の根源、「クカルヴ」を倒してほしい。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-9.png", text: "「そうすれば…この世界の戦争が終結し、平和が戻る。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「俺に…利益はあるのか…?」", name: savedata.name, speaker: "left" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「そうだな…お前が大罪を犯す前の時間に戻し、お前が元居た世界に帰してやる。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「分かった。引き受けよう。」", name: savedata.name, speaker: "left" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「あ…?」", name: savedata.name, speaker: "left" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「…お前は無重力空間にずっと居た所為で動けなくなったんだな。それなら俺はお前に一つ力を授けてやろう。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「クリスタル族と戦う以上、相手の攻撃を避ける必要がある。そのためには移動しなければならない。移動できる能力を授けてやろう。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「…その能力は…「Graphiny」。重力を操作できる。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "能力「Graphiny」を授かった。" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: "「さぁ…行け。」", name: "神", speaker: "right" },
+                { img: "./ansc/movie/prologuemovie-7.png", text: savedata.name + "は、自分のためと、戦争を終結させるため、戦うことを決意した。" }
+            ];
+
+            const skipBtn = document.createElement('div');
+            skipBtn.innerText = "SKIP >>";
+            const isMobileSkip = window.innerWidth <= 768;
+            skipBtn.style.cssText = `position:absolute; top:10px; right:10px; z-index:2000; color:white; font-family:'PixelMplus10'; font-size:${isMobileSkip ? '16px' : '24px'}; cursor:pointer; background:rgba(0,0,0,0.5); padding:${isMobileSkip ? '6px' : '10px'}; border:2px solid white; transition: background 0.2s;`;
+            skipBtn.onmouseenter = () => skipBtn.style.background = "rgba(255, 255, 255, 0.3)";
+            skipBtn.onmouseleave = () => skipBtn.style.background = "rgba(0,0,0,0.5)";
+
+            let skipped = false;
+            skipBtn.onclick = () => { skipped = true; };
+            skipBtn.ontouchstart = () => { skipped = true; };
+            document.getElementById('game-container').appendChild(skipBtn);
+
+            for (const scene of scenes) {
+                if (skipped) break;
+
+                if (scene.img) {
+                    const imgPath = scene.img.replace('./game/', '');
+                    Bg(imgPath);
+                }
+
+                if (scene.chara === false) {
+                    setchar("left", null);
+                    setchar("right", null);
+                } else if (scene.speaker) {
+                    if (scene.speaker === 'left') {
+                        setchar('left', 'ansc/player/player.png');
+                    } else if (scene.speaker === 'right') {
+                        setchar('right', ASSETS.god);
+                    }
+                }
+
+                if (skipped) break;
+                await showvn(scene.text, scene.name || "");
+            }
+
+            skipBtn.remove();
+            const box = document.getElementById('msg-box');
+            box.style.opacity = 0;
+            setchar("left", null);
+            setchar("right", null);
+            await sleep(1000);
+        }
+
+        async function showLogo() {
+            const logoLayer = document.createElement('div');
+            logoLayer.style.cssText = `
+                position: absolute; inset: 0; z-index: 2000; background: #000;
+                display: flex; align-items: center; justify-content: center;
+                opacity: 0; transition: opacity 1s;
+            `;
+            const logoImg = document.createElement('img');
+            logoImg.src = PATH_PREFIX + ASSETS.logo;
+            const isMobile = window.innerWidth <= 768;
+            logoImg.style.width = isMobile ? "80%" : "600px";
+            logoImg.style.maxWidth = "600px";
+            logoImg.style.filter = "drop-shadow(0 0 20px #4deeea)";
+            logoImg.style.animation = "float 3s ease-in-out infinite";
+
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }`;
+            logoLayer.appendChild(style);
+
+            logoLayer.appendChild(logoImg);
+            document.getElementById('game-container').appendChild(logoLayer);
+
+            requestAnimationFrame(() => logoLayer.style.opacity = 1);
+            await sleep(3000);
+            logoLayer.style.opacity = 0;
+            await sleep(1000);
+            logoLayer.remove();
+        }
+
+        const WORLD_CONFIG = [
+            [
+                { type: "battle", level: 1 },
+                { type: "battle", level: 2 },
+                { type: "event", id: "ev_god_save", label: "Warning" },
+                { type: "battle", level: 3 },
+                { type: "battle", level: 4 },
+                { type: "event", id: "ev_sign_red", label: "Sign" },
+                { type: "battle", level: 5 },
+                { type: "battle", level: 6 },
+                { type: "event", id: "ev_red_1", label: "Glitch" },
+                { type: "battle", level: 7, pre: "pre_red", post: "post_red" },
+                { type: "event", id: "ev_red_2", label: "Log" }
+            ],
+            [
+                { type: "battle", level: 1 },
+                { type: "battle", level: 2 },
+                { type: "event", id: "ev_sign_green", label: "Sign" },
+                { type: "battle", level: 4 },
+                { type: "event", id: "ev_mem_bastard", label: "Video" },
+                { type: "battle", level: 5 },
+                { type: "event", id: "ev_green_1", label: "Forest" },
+                { type: "battle", level: 7, pre: "pre_green", post: "post_green" },
+                { type: "event", id: "ev_green_2", label: "Roots" }
+            ],
+            [
+                { type: "battle", level: 1 },
+                { type: "battle", level: 3 },
+                { type: "event", id: "ev_sign_blue", label: "Sign" },
+                { type: "battle", level: 4 },
+                { type: "event", id: "ev_god_blue", label: "Chat" },
+                { type: "battle", level: 6 },
+            ],
+            [
+                { type: "battle", level: 1 },
+                { type: "event", id: "ev_sign_black", label: "Sign" },
+                { type: "battle", level: 4 },
+                { type: "event", id: "ev_god_final", label: "Final" },
+                { type: "battle", level: 6 },
+                { type: "event", id: "ev_black_1", label: "Gate" },
+                { type: "battle", level: 7, pre: "pre_black", post: "post_black" },
+                { type: "event", id: "ev_black_2", label: "End?" }
+            ]
+        ];
+
+        async function realStageSelect() {
+            const parentElement = document.getElementById('battle-layer');
+            parentElement.style.opacity = 1;
+
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute; inset: 0; background: #000;
+                display: flex; flex-direction: column;
+                font-family: 'PixelMplus10', sans-serif; color: #fff;
+                image-rendering: pixelated;
+                opacity: 0; transition: opacity 0.3s;
+            `;
+            parentElement.appendChild(overlay);
+            requestAnimationFrame(() => overlay.style.opacity = '1');
+
+            const isMobileStage = window.innerWidth <= 768;
+            const header = document.createElement('div');
+            header.style.cssText = `
+                height: ${isMobileStage ? '50px' : '80px'}; background: #000;
+                border-bottom: ${isMobileStage ? '2px' : '4px'} solid #fff;
+                display: flex; align-items: center; justify-content: center;
+                gap: ${isMobileStage ? '10px' : '20px'}; z-index: 10;
+            `;
+            overlay.appendChild(header);
+
+            const worlds = [
+                { id: 0, name: "RED", color: "#ff2222", bg: "#400" },
+                { id: 1, name: "GREEN", color: "#22ff22", bg: "#040" },
+                { id: 2, name: "BLUE", color: "#4444ff", bg: "#004" },
+                { id: 3, name: "BLACK", color: "#aa44ff", bg: "#303" },
+            ];
+
+            const contentArea = document.createElement('div');
+            contentArea.style.cssText = `
+                flex: 1; position: relative; overflow: hidden; background: #111;
+            `;
+            overlay.appendChild(contentArea);
+
+            const mapContainer = document.createElement('div');
+            mapContainer.style.cssText = `
+                height: 100%; display: flex; align-items: center;
+                padding: 0 100px;
+                position: relative;
+                min-width: 100%;
+                transition: transform 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1);
+            `;
+            mapContainer.innerHTML = `
+                <div style="
+                    position: absolute; inset: 0; pointer-events: none;
+                    background-image:
+                    linear-gradient(#222 4px, transparent 4px),
+                    linear-gradient(90deg, #222 4px, transparent 4px);
+                    background-size: 80px 80px; opacity: 0.5;
+                "></div>
+            `;
+            contentArea.appendChild(mapContainer);
+
+            const progress = [7, 4, 2, 0];
+
+            function renderMap(worldId) {
+                while (mapContainer.children.length > 1) {
+                    mapContainer.removeChild(mapContainer.lastChild);
+                }
+
+                const worldInfo = worlds[worldId];
+                const count = progress[worldId] || 0;
+                const stageList = WORLD_CONFIG[worldId] || [];
+
+                mapContainer.style.backgroundColor = worldInfo.bg;
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; `;
+
+                const amplitudeY = 150;
+                const mapHeight = 500;
+                const spacingX = 200;
+                const totalWidth = 400 + (stageList.length * spacingX);
+
+                mapContainer.style.width = `${totalWidth}px`;
+                svg.setAttribute("width", totalWidth);
+
+                let prevX = -1, prevY = -1;
+
+                stageList.forEach((stage, i) => {
+                    const x = 200 + i * spacingX;
+                    const yOffset = Math.sin(i * 1.5) * amplitudeY;
+                    const y = (mapHeight / 2) + yOffset;
+
+                    const isCurrent = i === count;
+                    const isLocked = i > count;
+                    const isAccessible = !isLocked;
+
+                    if (prevX !== -1) {
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", prevX);
+                        line.setAttribute("y1", prevY);
+                        line.setAttribute("x2", x);
+                        line.setAttribute("y2", y);
+                        const lineColor = isAccessible ? worldInfo.color : "#444";
+                        line.setAttribute("stroke", lineColor);
+                        line.setAttribute("stroke-width", "8");
+                        line.setAttribute("stroke-dasharray", isAccessible ? "none" : "20,10");
+                        svg.appendChild(line);
+                    }
+                    prevX = x; prevY = y;
+
+                    const node = document.createElement('div');
+                    let shapeCSS = "";
+                    let innerHTML = "";
+
+                    if (stage.type === 'battle' || (stage.type && stage.type.startsWith('mov'))) {
+                        shapeCSS = `
+                            width: 100px; height: 100px;
+                            transform: rotate(45deg);
+                            background: ${isLocked ? '#222' : worldInfo.color};
+                            border: 6px solid ${isCurrent ? '#fff' : '#444'};
+                            box-shadow: ${isCurrent ? '0 0 25px #fff' : '8px 8px 0px #000'};
+                        `;
+                        const labelText = stage.type === 'battle' ? stage.level : "BOSS";
+                        innerHTML = `<div style="transform: rotate(-45deg); font-size: 30px; font-weight: bold;">${labelText}</div>`;
+                    } else {
+                        shapeCSS = `
+                            width: 80px; height: 80px;
+                            border-radius: 50%;
+                            background: ${isLocked ? '#222' : '#ffff00'};
+                            color: ${isLocked ? '#fff' : '#000'};
+                            border: 6px solid ${isCurrent ? '#fff' : '#444'};
+                            box-shadow: ${isCurrent ? '0 0 25px #fff' : 'none'};
+                        `;
+                        innerHTML = `<div style="font-size: 30px; font-weight: bold;">!</div>`;
+                    }
+
+                    node.style.cssText = `
+                        position: absolute; left: ${x}px; top: ${y}px;
+                        margin-left: -50px; margin-top: -50px;
+                        display: flex; align-items: center; justify-content: center;
+                        z-index: 2; transition: transform 0.2s;
+                        ${shapeCSS}
+                    `;
+                    node.innerHTML = innerHTML;
+                    mapContainer.appendChild(node);
+
+                    if (stage.label) {
+                        const labelNode = document.createElement('div');
+                        labelNode.textContent = stage.label;
+                        labelNode.style.cssText = `
+                            position: absolute; left: ${x}px; top: ${y + 80}px;
+                            transform: translateX(-50%);
+                            background: #000; border: 2px solid #fff;
+                            padding: 4px 8px; font-size: 16px;
+                            opacity: ${isLocked ? 0.5 : 1};
+                        `;
+                        mapContainer.appendChild(labelNode);
+                    }
+                });
+                mapContainer.appendChild(svg);
+
+                const targetX = 200 + count * spacingX;
+                contentArea.scrollLeft = Math.max(0, targetX - 500);
+            }
+
+            let tabs = [];
+            worlds.forEach((w, idx) => {
+                const tab = document.createElement('div');
+                tab.textContent = w.name;
+                tab.style.cssText = `
+                    padding: ${isMobileStage ? '5px 10px' : '10px 20px'};
+                    background: ${w.color}; border: ${isMobileStage ? '2px' : '4px'} solid #fff;
+                    box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.5);
+                    font-weight: bold; font-size: ${isMobileStage ? '12px' : '20px'};
+                    transition: transform 0.2s, opacity 0.2s;
+                `;
+                header.appendChild(tab);
+                tabs.push(tab);
+            });
+
+            tabs.forEach((t, i) => {
+                t.style.opacity = (i === 0) ? 1 : 0.4;
+                t.style.transform = (i === 0) ? "translateY(4px)" : "none";
+            });
+            renderMap(0);
+            await sleep(2000);
+
+            tabs.forEach((t, i) => {
+                t.style.opacity = (i === 1) ? 1 : 0.4;
+                t.style.transform = (i === 1) ? "translateY(4px)" : "none";
+            });
+            renderMap(1);
+            await sleep(1500);
+
+            tabs.forEach((t, i) => {
+                t.style.opacity = (i === 2) ? 1 : 0.4;
+                t.style.transform = (i === 2) ? "translateY(4px)" : "none";
+            });
+            renderMap(2);
+            await sleep(1500);
+
+            overlay.style.opacity = 0;
+            await sleep(500);
+            overlay.style.opacity = 0;
+            await sleep(500);
+            parentElement.innerHTML = "";
+
+            const newCanvas = document.createElement('canvas');
+            newCanvas.id = 'battle-canvas';
+            newCanvas.width = 1200;
+            newCanvas.height = 700;
+            parentElement.appendChild(newCanvas);
+
+            parentElement.style.opacity = 0;
+            parentElement.style.opacity = 0;
+        }
+
+        async function createOtherModeMenuDOM(parentElement) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                font-family: 'PixelMplus10', sans-serif;
+                opacity: 0; transition: opacity 0.5s;
+            `;
+            parentElement.appendChild(overlay);
+            requestAnimationFrame(() => overlay.style.opacity = '1');
+
+            const isMobileOther = window.innerWidth <= 768;
+            const title = document.createElement('h1');
+            title.textContent = "OTHER MODE";
+            title.style.cssText = `
+                font-size: ${isMobileOther ? '40px' : '80px'}; color: #fff; margin-bottom: ${isMobileOther ? '20px' : '50px'};
+                text-shadow: 0 0 10px #fff;
+            `;
+            overlay.appendChild(title);
+
+            const options = [
+                { label: "TIME ATTACK", value: "TimeAttack", desc: "Boss Rush Mode" },
+                { label: "CHALLENGE", value: "Challenge", desc: "High Difficulty Challenges" },
+                { label: "DANMAKU MAKER", value: "DanmakuMaker", desc: "Create Custom Patterns" },
+                { label: "BACK", value: "Back", desc: "Return to Title" }
+            ];
+
+            const btnElements = [];
+            const menuContainer = document.createElement('div');
+            menuContainer.style.cssText = `display: flex; flex-direction: column; gap: ${isMobileOther ? '10px' : '20px'}; width: ${isMobileOther ? '90%' : '500px'}; max-width: 500px;`;
+            overlay.appendChild(menuContainer);
+
+            options.forEach(opt => {
+                const btn = document.createElement('div');
+                btn.innerHTML = `
+                    <div style="font-size: ${isMobileOther ? '16px' : '24px'};">${opt.label}</div>
+                    <div style="font-size: ${isMobileOther ? '10px' : '14px'}; color: #888;">${opt.desc}</div>
+                `;
+                btn.style.cssText = `
+                    padding: ${isMobileOther ? '12px' : '20px'}; border: 2px solid #666; background: rgba(0,0,0,0.8);
+                    color: #fff; transition: all 0.2s;
+                    text-align: left;
+                `;
+                menuContainer.appendChild(btn);
+                btnElements.push(btn);
+            });
+
+            return { overlay, btnElements };
+        }
+
+        async function promoteOtherMode() {
+            const parentElement = document.getElementById('battle-layer');
+            parentElement.innerHTML = "";
+            parentElement.style.opacity = 1;
+
+            const { overlay, btnElements } = await createOtherModeMenuDOM(parentElement);
+
+            await sleep(500);
+            highlightBtn(btnElements[0]);
+            await sleep(1500);
+
+            unhighlightBtn(btnElements[0]);
+            highlightBtn(btnElements[1]);
+            await sleep(1500);
+
+            unhighlightBtn(btnElements[1]);
+            highlightBtn(btnElements[2]);
+            await sleep(1000);
+
+            overlay.style.opacity = 0;
+            await sleep(500);
+            overlay.remove();
+
+            const fakeBg1 = document.createElement('div'); fakeBg1.id = "a_back"; fakeBg1.style.display = "none"; document.body.appendChild(fakeBg1);
+            const fakeBg2 = document.createElement('div'); fakeBg2.id = "background"; fakeBg2.style.display = "none"; document.body.appendChild(fakeBg2);
+
+            startDanmakuMaker(savedata, battle, null, beam);
+            showLabel("ここで弾幕を\n自由に作れます…");
+
+            await sleep(2000);
+
+            const makerContainer = document.querySelector('.scratch-container');
+            if (makerContainer) makerContainer.remove();
+            if (document.getElementById('a_back')) document.getElementById('a_back').remove();
+            if (document.getElementById('background')) document.getElementById('background').remove();
+
+            parentElement.innerHTML = "";
+            parentElement.appendChild(document.createElement('canvas')).id = 'battle-canvas';
+            document.getElementById('battle-canvas').width = 1200;
+            document.getElementById('battle-canvas').height = 700;
+            parentElement.style.opacity = 0;
+        }
+
+        function highlightBtn(btn) {
+            btn.style.borderColor = "#0ff";
+            btn.style.background = "rgba(0, 50, 50, 0.5)";
+            btn.style.transform = "translateX(20px)";
+        }
+        function unhighlightBtn(btn) {
+            btn.style.borderColor = "#666";
+            btn.style.background = "rgba(0,0,0,0.8)";
+            btn.style.transform = "translateX(0)";
+        }
+
+        window.startMovie = async function () {
+            document.getElementById('start-screen').style.display = 'none';
+
+            audioCtx.play(ASSETS.music_menu);
+            const bgEffect = new backeffect();
+
+            await showLogo();
+
+            Bg(ASSETS.bg);
+
+            setchar('right', ASSETS.god);
+            await sleep(1000);
+
+            await showvn("「始めようか…私は、「神」。」", "神", "right");
+            await showvn("「ここは『Graphiny』。重力操作型シューティングゲーム…だ。」", "神", "right");
+            await showvn("「まず、こちらのムービーを見てほしい。」", "神", "right");
+            showvn(null); setchar('right', null);
+            await showPrologueSummary();
+            await showvn("「…今見たのは、ストーリーモードのプロローグだ。」", "神", "right");
+            await showvn("「このゲームには…いろいろな「モード」があるが、」", "神", "right");
+            await showvn("「まず、『ストーリー』を紹介しよう。」", "神", "right");
+            Bg(ASSETS.bg); setchar('right', ASSETS.god);
+            showvn(null); setchar('right', null);
+
+            await realStageSelect();
+            await showvn("「今見たのは…ステージセレクト画面だ。」", "神", "right");
+            await showvn("「そうだな…ここで一つ、テストとしてバトルでもしてみるか。」", "神", "right");
+
+            setchar('right', ASSETS.god);
+            await showvn("「例えば…『Red隊のディアー』。囲うようにじわじわと攻撃をしてくる。」", "神", "right");
+            showvn(null); setchar('right', null);
+
+            audioCtx.stop();
+            document.getElementById('battle-layer').style.opacity = 1;
+            showLabel("VS RED BOSS (STAGE 0)");
+
+            const battleResult = await battle(
+                () => context.bullethells(31, "rgba(255,0,0,1)"),
+                0,
+                7,
+                false, false, null, null,
+                600
+            );
+
+            audioCtx.play(ASSETS.music_menu);
+            document.getElementById('battle-layer').style.opacity = 0;
+            setchar('right', ASSETS.god);
+
+            if (battleResult === false) {
+                await showvn("「……。」", "神", "right");
+                await showvn("「気にしなくていい。奴らは…強い。」", "神", "right");
+            } else {
+                await showvn("「あの弾幕を…避けた…?」", "神", "right");
+                await showvn("「お前ならあるいは…いや、なんでもない。」", "神", "right");
+            }
+
+            await sleep(1000);
+
+            await showvn("「そして次。Danmaku makerと、その他のモード。」", "神", "right");
+            showvn(null); setchar('right', null);
+
+            await promoteOtherMode();
+
+            Bg(ASSETS.bg);
+            setchar('right', ASSETS.god);
+
+            await showvn("「…さあ、準備はいいか？」", "神", "right");
+            await showvn("「お前の手で、この世界に新たな解を。」", "神", "right");
+            await showvn("「Graphinyで待っているぞ。」", "神", "right");
+
+            setchar('right', ASSETS.error);
+            await sleep(50);
+
+            const container = document.getElementById('game-container');
+            container.style.filter = "invert(1)";
+            await sleep(50);
+            container.style.filter = "none";
+
+            bgEffect.stop();
+            document.body.innerHTML = "";
+            document.body.style.background = "black";
+            await showLabel("12/17(水)");
+            await sleep(2000);
+            await showLabel("Web上で遊べる\n体験版配布…");
+            await showLabel(
+                "Scenario: me (12)\n" +
+                "Program: me (12)\n" +
+                "Music: me (12)\n" +
+                "Art: me (12)\n\n" +
+                "Background: ぱくたそ"
+            );
+        };
+
+        const cursor = document.getElementById('cursor-custom');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        document.addEventListener('mousedown', () => {
+            cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
+            cursor.style.backgroundColor = 'rgba(255, 0, 85, 0.5)';
+        });
+        document.addEventListener('mouseup', () => {
+            cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+            cursor.style.backgroundColor = '';
+        });
+
+        const interactiveElements = document.querySelectorAll('button, #msg-box, .chapter-node');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+    </script>
+
+
+</html>
